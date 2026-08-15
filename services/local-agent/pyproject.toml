@@ -1,0 +1,31 @@
+[project]
+name = "credit-card-cfo-local-agent"
+version = "0.1.0"
+description = "Local agent: Gmail sync, secure statement-password vault, PDF decryption/parsing, categorization."
+requires-python = ">=3.11"
+dependencies = [
+    "keyring>=25.0.0",
+    "pywin32; platform_system=='Windows'",
+    "pymupdf>=1.24.0",
+    "pypdf>=4.0.0",
+    "pydantic>=2.6.0",
+    "google-api-python-client>=2.120.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth>=2.28.0",
+    "supabase>=2.4.0",
+    "python-dotenv>=1.0.1",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

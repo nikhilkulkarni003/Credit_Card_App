@@ -1,0 +1,62 @@
+# ---- Secrets & credentials ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+token.json
+oauth_token*.json
+client_secret*.json
+
+# ---- Local vault / sensitive local state ----
+services/local-agent/.vault/
+services/local-agent/vault/
+services/local-agent/*.vault
+services/local-agent/local_agent.sqlite*
+services/local-agent/.token_cache/
+
+# ---- Financial documents (never commit real statements) ----
+*.pdf
+!tests/fixtures/**/*.pdf
+data/
+!data/.gitkeep
+
+# ---- Logs & temp ----
+*.log
+logs/
+tmp/
+temp/
+services/local-agent/tmp/
+
+# ---- Node ----
+node_modules/
+apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+.next/
+out/
+dist/
+build/
+.turbo/
+.vercel/
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+services/local-agent/.venv/
+services/local-agent/venv/
+*.egg-info/
+.pytest_cache/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---- Supabase local ----
+supabase/.branches/
+supabase/.temp/
