@@ -59,7 +59,7 @@ class GeminiCategorizer:
         api_key: str,
         allowed_categories: set[str],
         model: str = "gemini-3.6-flash",
-        timeout_seconds: float = 15.0,
+        timeout_seconds: float = 30.0,
         http_client: httpx.Client | None = None,
     ) -> None:
         self._api_key = api_key
