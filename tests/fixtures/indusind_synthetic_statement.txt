@@ -1,0 +1,60 @@
+INDUSIND BANK CREDIT CARD LEGEND MASTERCARD
+Previous Balance
+Purchases & Other Charges
+Cash Advance
+Payment & Other Credits
+Statement Period
+Statement Date
+5,000.00 DR
+0.00
+618.00
+1,000.00
+16/05/2026 To 15/06/2026
+05/08/2026
+
+Credit
+Summary
+Credit Limit
+Available Credit Limit
+Cash Limit
+Available Cash Limit
+2,58,000.00
+2,14,353.45
+51,600.00
+51,600.00
+
+Payment Details for MR TEST USER (Credit Card No. 4321XXXXXXXX1234)
+20/05/2026
+BBPS PAYMENT
+0
+1,000.00 CR
+Total
+0
+1,000.00
+
+Interest & Other Charges for MR TEST USER (Credit Card No. 4321XXXXXXXX1234)
+15/06/2026
+FINANCE CHARGES
+0
+100.00 DR
+15/06/2026
+GST @ 18%
+0
+18.00 DR
+Total
+0
+118.00
+
+EMI Charges for MR TEST USER (Credit Card No. 4321XXXXXXXX1234)
+15/06/2026
+EMI INT-OS TO EMI-PF 0.5% HP_ (001/012)
+0
+500.00 DR
+Total
+0
+500.00
+
+1
+05/08/2026
+700.00
+4321XXXXXXXX1234 (Mention your full Credit Card No.)
