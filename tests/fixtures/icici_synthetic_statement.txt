@@ -1,0 +1,62 @@
+STATEMENT SUMMARY
+CIN No. L65190GJ1994PLC021012
+Invoice No: 1574280700275865
+=
+Total Amount due
+Minimum Amount due
+Interest will be charged if your
+total amount due is not paid
+EARNINGS
+Earned
+Earnings transfered to
+Amazon Pay balance*
+184
+184
+ Others-100%
+100%
+`192.00
+`3,824.59
+
+ICICI Bank Credit Card GST Number: 27AAACI1195H3ZK
+Statement period : June 29, 2026 to July 28, 2026
+
+SPENDS OVERVIEW
+July 28, 2026
+August 15, 2026
+
+Previous Balance
+Purchases / Charges
+Cash Advances
+Payments / Credits
+`0.00
+`3,824.59
+`0.00
+`0.00
+
+Date
+SerNo.
+Transaction Details
+Reward
+Points
+Intl.#
+amount
+Amount (in`)
+4315XXXXXXXX1234
+01/07/2026
+13739975663
+AMAZON PAY IN E COMMERC BANGALORE
+IN
+60
+1,500.00
+02/07/2026
+13740647902
+SWIGGY BANGALORE
+IN
+3
+800.00
+03/07/2026
+13789843898
+BIGBASKET GROCERY BANGALORE
+IN
+26
+1,524.59
