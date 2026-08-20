@@ -70,3 +70,56 @@ def test_reconciliation_flags_mismatch():
 
     assert result.ok is False
     assert "does not match" in result.explanation
+
+
+def test_gst_is_informational_only_and_excluded_from_reconciliation():
+    # Regression test for a real bug: HDFC bills GST one cycle late ("GST
+    # levied on statement date is always billed in the subsequent
+    # statement"), but the parser was wrongly adding a non-zero "TOTAL GST"
+    # value into the current cycle's reconciliation formula, causing a real
+    # statement to fail reconciliation by the exact GST amount.
+    text = """
+Credit Card No.
+Statement Date
+Billing Period
+457704XXXXXX9999
+26 May, 2026 - 25 Jun, 2026
+
+TOTAL AMOUNT DUE
+C21,129.00
+MINIMUM DUE
+C1,060.00
+DUE DATE
+15 Jul, 2026
+
+PREVIOUS STATEMENT DUES
+PAYMENTS/CREDITS
+RECEIVED
+PURCHASES/DEBIT
+(Current Billing Cycle)
+FINANCE CHARGES
+C21,581.18
+C21,581.00
+C21,129.06
+C0.00
+
+GST Summary
+IGST
+CGST
+SGST
+REVERSAL
+TOTAL GST
+C213.27
+C0
+C0
+C0
+C213.27
+"""
+    parser = HdfcStatementParser()
+    statement = parser.extract_statement_metadata(text)
+
+    assert statement.gst == Decimal("213.27")  # still captured, for dashboard display
+    assert all(c.label != "GST" for c in statement.charges)  # but excluded from reconciliation
+
+    result = parser.validate(statement)
+    assert result.ok is True, result.explanation

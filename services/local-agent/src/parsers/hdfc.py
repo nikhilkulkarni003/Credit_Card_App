@@ -16,8 +16,18 @@ patterns). Key quirks of PyMuPDF's text extraction for this statement:
   - Transaction rows span multiple lines: a "DD/MM/YYYY| HH:MM" line, then a
     (possibly wrapped) description, then a "+ C amount" (credit) or
     "C amount" (debit) line.
+  - **GST is billed one cycle late.** The statement text says so explicitly:
+    "GST levied on statement date is always billed in the subsequent
+    statement." This was discovered when a second real statement (June,
+    with a non-zero GST Summary section) reconciled with a ~C213 mismatch —
+    the parser was correctly extracting "TOTAL GST" but then wrongly adding
+    it into the CURRENT cycle's reconciliation formula. GST is therefore
+    captured as an informational field only (statement.gst, for dashboard
+    display) and deliberately excluded from the `charges` list that
+    validate() sums — including it there double-counts against a balance
+    that doesn't actually include this cycle's GST yet.
 
-This is still only calibrated against ONE statement from ONE card product.
+This is still only calibrated against TWO statements from ONE card product.
 If extraction/reconciliation looks wrong on a different HDFC card variant or
 statement month, re-run `debug-extract` on that statement and adjust the
 patterns below — do not assume this covers every HDFC layout.
@@ -51,15 +61,21 @@ _DUES_BLOCK_ANCHOR_RE = re.compile(
     r"PREVIOUS STATEMENT DUES.*?FINANCE CHARGES", re.IGNORECASE | re.DOTALL
 )
 
-# Optional standalone charge lines (not observed on the calibration statement,
-# since it had no GST/late/annual fee that cycle — kept as best-effort so a
-# statement that DOES carry these isn't silently dropped; verify against a
-# real example with non-zero values before trusting these blindly).
+# Optional standalone charge lines (Late/Annual fee not observed on either
+# calibration statement — kept as best-effort so a statement that DOES carry
+# these isn't silently dropped; verify against a real example with non-zero
+# values before trusting these blindly). GST is deliberately NOT in this
+# dict — see the "GST is billed one cycle late" note above; it's extracted
+# separately, informationally only, via _TOTAL_GST_RE below.
 _CHARGE_PATTERNS: dict[str, str] = {
-    "GST": rf"\b(?:IGST|Total GST|GST)\b\s*[:\-]?\s*{_AMOUNT_RE}",
     "Late Payment Fee": rf"Late\s+Payment\s+(?:Fee|Charges?)\s*[:\-]?\s*{_AMOUNT_RE}",
     "Annual Fee": rf"(?:Annual|Membership)\s+Fee\s*[:\-]?\s*{_AMOUNT_RE}",
 }
+
+# "TOTAL GST" label immediately followed by its value — confirmed reliable
+# (unlike the individual IGST/CGST/SGST lines, which are a label-block-then-
+# value-block layout too fragile to parse safely). Informational only.
+_TOTAL_GST_RE = re.compile(rf"TOTAL GST\s*\n\s*{_AMOUNT_RE}", re.IGNORECASE)
 
 # Transaction row: "DD/MM/YYYY| HH:MM", then a (possibly multi-line, wrapped)
 # description, then an amount line optionally prefixed with "+" for a credit.
@@ -147,6 +163,9 @@ class HdfcStatementParser(StatementParser):
         charges = self.extract_charges(pdf_text)
         charges_by_label = {c.label: c.amount for c in charges}
 
+        total_gst_match = _TOTAL_GST_RE.search(pdf_text)
+        gst = _parse_amount(total_gst_match.group(1)) if total_gst_match else None
+
         found_fields = [
             total_amount_due,
             minimum_amount_due,
@@ -171,7 +190,7 @@ class HdfcStatementParser(StatementParser):
             payments_received=payments_received,
             purchases=purchases,
             interest=interest if interest else charges_by_label.get("Interest"),
-            gst=charges_by_label.get("GST"),
+            gst=gst,  # informational only — deliberately not in `charges` (see module docstring)
             late_payment_fee=charges_by_label.get("Late Payment Fee"),
             annual_fee=charges_by_label.get("Annual Fee"),
             closing_balance=total_amount_due,  # HDFC doesn't print a separate "closing balance" label
