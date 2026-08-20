@@ -21,6 +21,7 @@ _STATEMENT_KEYWORDS = re.compile(
 _BANK_SENDER_DOMAINS = {
     "HDFC": ("hdfcbank.net", "hdfcbank.com"),
     "ICICI": ("icici.bank.in", "icicibank.com"),
+    "INDUSIND": ("indusind.com",),
 }
 
 
