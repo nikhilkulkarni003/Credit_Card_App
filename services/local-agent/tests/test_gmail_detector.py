@@ -47,3 +47,8 @@ def test_guess_bank_code_hdfc():
 def test_guess_bank_code_unknown_sender():
     msg = make_msg(sender_email="someone@example.com")
     assert guess_bank_code(msg) is None
+
+
+def test_guess_bank_code_icici():
+    msg = make_msg(sender_email="credit_card@icici.bank.in")
+    assert guess_bank_code(msg) == "ICICI"

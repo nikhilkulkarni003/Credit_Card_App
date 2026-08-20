@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from src.parsers.base import StatementParser
 from src.parsers.hdfc import HdfcStatementParser
+from src.parsers.icici import IciciStatementParser
 
 _REGISTRY: dict[str, type[StatementParser]] = {
     "HDFC": HdfcStatementParser,
+    "ICICI": IciciStatementParser,
 }
 
 
