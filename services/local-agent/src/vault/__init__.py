@@ -1,3 +1,3 @@
-from .vault import PasswordVault, VaultError, PasswordNotConfigured
+from .vault import PasswordVault, PasswordScope, VaultError, PasswordNotConfigured
 
-__all__ = ["PasswordVault", "VaultError", "PasswordNotConfigured"]
+__all__ = ["PasswordVault", "PasswordScope", "VaultError", "PasswordNotConfigured"]
