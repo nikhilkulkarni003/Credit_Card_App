@@ -6,12 +6,14 @@ the venv active, e.g.:
     python -m src.cli scan-gmail
     python -m src.cli set-password HDFC
     python -m src.cli process-statement <gmail-message-id> HDFC
+    python -m src.cli debug-extract <gmail-message-id> HDFC
 """
 
 from __future__ import annotations
 
 import getpass
 import sys
+from pathlib import Path
 
 from src.config import load_config
 from src.gmail.auth import GmailAuthError, get_credentials, is_connected
@@ -151,11 +153,62 @@ def process_statement() -> None:
             print(f"  {txn.transaction_date}  {txn.merchant_name:<30} {txn.amount:>10}  ({txn.transaction_type})")
 
 
+def debug_extract() -> None:
+    """
+    Decrypts one statement locally and writes the RAW extracted text to a local,
+    git-ignored file — nothing is sent anywhere, including to this chat. Use this
+    to inspect the real layout when a bank parser's regexes don't match yet.
+    """
+    if len(sys.argv) < 4:
+        print("Usage: python -m src.cli debug-extract <gmail-message-id> <BANK_CODE> [CARD_LAST_FOUR]")
+        sys.exit(1)
+    message_id, bank_code = sys.argv[2], sys.argv[3]
+    card_id = sys.argv[4] if len(sys.argv) > 4 else None
+
+    config = load_config()
+    if not is_connected():
+        print("Gmail is not connected yet. Run: python -m src.cli connect-gmail")
+        sys.exit(1)
+
+    vault = PasswordVault()
+    try:
+        password = vault.get_password(bank_code, card_id=card_id)
+    except PasswordNotConfigured:
+        print(f"No password configured for {bank_code}. Run: python -m src.cli set-password {bank_code}")
+        sys.exit(1)
+
+    creds = get_credentials(config.gmail_oauth_client_id, config.gmail_oauth_client_secret)
+    client = GmailClient(creds)
+    attachments = client.download_pdf_attachments(message_id)
+    if not attachments:
+        print("No PDF attachments found on that message.")
+        sys.exit(1)
+
+    filename, pdf_bytes = attachments[0]
+    try:
+        text = decrypt_and_extract_text(pdf_bytes, password)
+    except PdfDecryptError as exc:
+        print(f"Could not decrypt PDF: {exc}")
+        sys.exit(1)
+    finally:
+        del password
+        del pdf_bytes
+
+    out_dir = Path(__file__).resolve().parents[1] / "tmp"
+    out_dir.mkdir(exist_ok=True)
+    out_path = out_dir / "debug_extract.txt"
+    out_path.write_text(text, encoding="utf-8")
+
+    print(f"Wrote {len(text)} characters of extracted text to:\n  {out_path}")
+    print("This file is git-ignored and was never sent anywhere. Open it locally to inspect the layout.")
+
+
 COMMANDS = {
     "connect-gmail": connect_gmail,
     "scan-gmail": scan_gmail,
     "set-password": set_password,
     "process-statement": process_statement,
+    "debug-extract": debug_extract,
 }
 
 
