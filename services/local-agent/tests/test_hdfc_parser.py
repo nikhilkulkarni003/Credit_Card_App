@@ -24,13 +24,15 @@ def test_extract_statement_metadata():
     statement = parser.extract_statement_metadata(load_fixture_text())
 
     assert statement.card_last_four == "1234"
-    assert statement.total_amount_due == Decimal("15351.00")
-    assert statement.minimum_amount_due == Decimal("768.00")
+    assert statement.total_amount_due == Decimal("15315.00")
+    assert statement.minimum_amount_due == Decimal("766.00")
     assert statement.previous_balance == Decimal("10000.00")
+    assert statement.payments_received == Decimal("10000.00")
     assert statement.purchases == Decimal("15115.00")
-    assert statement.closing_balance == Decimal("15351.00")
     assert statement.interest == Decimal("200.00")
-    assert statement.gst == Decimal("36.00")
+    assert statement.closing_balance == Decimal("15315.00")
+    assert str(statement.due_date) == "2026-08-14"
+    assert str(statement.statement_period_end) == "2026-07-25"
 
 
 def test_extract_transactions_count_and_normalization():
@@ -43,9 +45,12 @@ def test_extract_transactions_count_and_normalization():
     assert swiggy.amount == Decimal("450.00")
     assert swiggy.transaction_type == "purchase"
 
-    payment = next(t for t in transactions if "PAYMENT RECEIVED" in t.original_description)
+    payment = next(t for t in transactions if "BPPY CC PAYMENT" in t.original_description)
     assert payment.amount == Decimal("-10000.00")
     assert payment.transaction_type == "payment"
+    # the long alnum reference token and "(Ref# ...)" block must be stripped from the normalized name
+    assert "DP216194TUHZ5LCU71L" not in payment.merchant_name
+    assert "Ref" not in payment.merchant_name
 
 
 def test_reconciliation_passes_on_consistent_fixture():
