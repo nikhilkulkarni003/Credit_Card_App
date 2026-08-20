@@ -7,6 +7,7 @@ the venv active, e.g.:
     python -m src.cli set-password HDFC
     python -m src.cli process-statement <gmail-message-id> HDFC
     python -m src.cli debug-extract <gmail-message-id> HDFC
+    python -m src.cli sync-statement <gmail-message-id> HDFC <card-last-four>
 """
 
 from __future__ import annotations
@@ -15,6 +16,8 @@ import getpass
 import sys
 from pathlib import Path
 
+from src.categorization.engine import CategorizationEngine
+from src.categorization.supabase_rule_store import SupabaseMerchantRuleStore
 from src.config import load_config
 from src.gmail.auth import GmailAuthError, get_credentials, is_connected
 from src.gmail.client import GmailClient
@@ -22,6 +25,8 @@ from src.gmail.detector import guess_bank_code, looks_like_statement_email
 from src.parsers.base import StatementParseError
 from src.parsers.registry import get_parser
 from src.pdf.decrypt import PdfDecryptError, decrypt_and_extract_text
+from src.sync.client import get_service_client
+from src.sync.repository import CardNotFound, get_card_id, get_single_user_id, sync_transactions, upsert_statement
 from src.vault import PasswordNotConfigured, PasswordScope, PasswordVault
 
 
@@ -203,12 +208,101 @@ def debug_extract() -> None:
     print("This file is git-ignored and was never sent anywhere. Open it locally to inspect the layout.")
 
 
+def sync_statement() -> None:
+    """
+    Full pipeline: download -> decrypt -> parse -> validate -> categorize ->
+    write to Supabase. Only sanitized structured data is sent (statement
+    totals, transaction descriptions/amounts/categories) — never the
+    statement password, never the raw PDF.
+    """
+    if len(sys.argv) < 5:
+        print("Usage: python -m src.cli sync-statement <gmail-message-id> <BANK_CODE> <CARD_LAST_FOUR>")
+        sys.exit(1)
+    message_id, bank_code, card_last_four = sys.argv[2], sys.argv[3], sys.argv[4]
+
+    config = load_config()
+    if not is_connected():
+        print("Gmail is not connected yet. Run: python -m src.cli connect-gmail")
+        sys.exit(1)
+
+    vault = PasswordVault()
+    try:
+        password = vault.get_password(bank_code)
+    except PasswordNotConfigured:
+        print(f"No password configured for {bank_code}. Run: python -m src.cli set-password {bank_code}")
+        sys.exit(1)
+
+    try:
+        parser = get_parser(bank_code)
+    except KeyError:
+        print(f"No parser registered for bank_code={bank_code!r}.")
+        sys.exit(1)
+
+    creds = get_credentials(config.gmail_oauth_client_id, config.gmail_oauth_client_secret)
+    client = GmailClient(creds)
+    attachments = client.download_pdf_attachments(message_id)
+    if not attachments:
+        print("No PDF attachments found on that message.")
+        sys.exit(1)
+    filename, pdf_bytes = attachments[0]
+
+    try:
+        text = decrypt_and_extract_text(pdf_bytes, password)
+    except PdfDecryptError as exc:
+        print(f"Could not decrypt PDF: {exc}")
+        sys.exit(1)
+    finally:
+        del password
+        del pdf_bytes
+
+    try:
+        statement = parser.extract_statement_metadata(text)
+    except StatementParseError as exc:
+        print(f"Could not parse statement: {exc}")
+        sys.exit(1)
+    statement.reconciliation = parser.validate(statement)
+
+    try:
+        supabase = get_service_client(config)
+    except RuntimeError as exc:
+        print(str(exc))
+        sys.exit(1)
+
+    user_id = get_single_user_id(supabase)
+    try:
+        card_id = get_card_id(supabase, user_id, bank_code, card_last_four)
+    except CardNotFound as exc:
+        print(str(exc))
+        sys.exit(1)
+
+    statement_id, is_new = upsert_statement(supabase, card_id, message_id, filename, statement)
+    if not is_new:
+        print(f"Statement already synced (statement_id={statement_id}); skipping re-insert (idempotent).")
+        return
+
+    rule_store = SupabaseMerchantRuleStore(supabase)
+    allowed_categories = rule_store.allowed_category_names(user_id)
+    engine = CategorizationEngine(
+        rule_store=rule_store,
+        ai_categorizer=None,  # Gemini fallback not wired up yet — see docs/development-log.md
+        ai_enabled=False,
+        confidence_threshold=config.ai_confidence_threshold,
+        allowed_categories=allowed_categories,
+    )
+    count = sync_transactions(supabase, user_id, statement_id, statement, engine)
+
+    print(f"Synced statement {statement_id} with {count} transaction(s).")
+    print(f"Reconciliation: {'OK' if statement.reconciliation.ok else 'MISMATCH'} — {statement.reconciliation.explanation}")
+    print("View it at http://localhost:3000/dashboard/statements")
+
+
 COMMANDS = {
     "connect-gmail": connect_gmail,
     "scan-gmail": scan_gmail,
     "set-password": set_password,
     "process-statement": process_statement,
     "debug-extract": debug_extract,
+    "sync-statement": sync_statement,
 }
 
 
