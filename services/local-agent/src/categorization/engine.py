@@ -80,9 +80,19 @@ class CategorizationEngine:
                 needs_review=False,
             )
 
-        # Stage 3: AI fallback (optional)
+        # Stage 3: AI fallback (optional). AI unavailability must never break
+        # the pipeline — fall through to uncategorized/needs_review instead.
         if self._ai_enabled and self._ai is not None:
-            category_name, confidence, reason = self._ai.suggest(normalized_merchant, description, amount)
+            try:
+                category_name, confidence, reason = self._ai.suggest(normalized_merchant, description, amount)
+            except Exception:
+                return CategorizationResult(
+                    category_name=None,
+                    source="uncategorized",
+                    confidence=None,
+                    reason="AI categorization unavailable (request failed); left for manual review.",
+                    needs_review=True,
+                )
             if category_name not in self._allowed_categories:
                 return CategorizationResult(
                     category_name=None,

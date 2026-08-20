@@ -13,12 +13,15 @@ class FakeRuleStore:
 
 
 class FakeAi:
-    def __init__(self, response):
+    def __init__(self, response=None, raises=None):
         self.response = response
+        self.raises = raises
         self.calls = []
 
     def suggest(self, merchant, description, amount):
         self.calls.append((merchant, description, amount))
+        if self.raises:
+            raise self.raises
         return self.response
 
 
@@ -79,6 +82,17 @@ def test_stage3_ai_low_confidence_flagged_for_review():
 
     assert result.needs_review is True
     assert result.source == "ai"
+
+
+def test_ai_failure_falls_back_to_uncategorized_instead_of_crashing():
+    ai = FakeAi(raises=RuntimeError("network error"))
+    engine = build_engine(ai=ai)
+
+    result = engine.categorize("u1", "Weird Merchant", "WEIRD MERCHANT XYZ", "999.00")
+
+    assert result.source == "uncategorized"
+    assert result.needs_review is True
+    assert result.category_name is None
 
 
 def test_ai_rejected_category_outside_allowed_list():

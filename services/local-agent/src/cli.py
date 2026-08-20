@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from src.categorization.engine import CategorizationEngine
+from src.categorization.gemini_categorizer import GeminiCategorizer
 from src.categorization.supabase_rule_store import SupabaseMerchantRuleStore
 from src.config import load_config
 from src.gmail.auth import GmailAuthError, get_credentials, is_connected
@@ -282,10 +283,18 @@ def sync_statement() -> None:
 
     rule_store = SupabaseMerchantRuleStore(supabase)
     allowed_categories = rule_store.allowed_category_names(user_id)
+
+    ai_categorizer = None
+    ai_enabled = config.ai_categorization_enabled and bool(config.gemini_api_key)
+    if ai_enabled:
+        ai_categorizer = GeminiCategorizer(api_key=config.gemini_api_key, allowed_categories=allowed_categories)
+    elif config.ai_categorization_enabled and not config.gemini_api_key:
+        print("AI categorization is enabled but GEMINI_API_KEY is not set — falling back to rules only.")
+
     engine = CategorizationEngine(
         rule_store=rule_store,
-        ai_categorizer=None,  # Gemini fallback not wired up yet — see docs/development-log.md
-        ai_enabled=False,
+        ai_categorizer=ai_categorizer,
+        ai_enabled=ai_enabled,
         confidence_threshold=config.ai_confidence_threshold,
         allowed_categories=allowed_categories,
     )
