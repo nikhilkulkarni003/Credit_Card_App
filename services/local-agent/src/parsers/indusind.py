@@ -49,10 +49,16 @@ from src.parsers.base import StatementParser
 _CARD_NO_RE = re.compile(r"\b(\d{4})X{4,8}(\d{4})\b")
 _PERIOD_RE = re.compile(r"(\d{2}/\d{2}/\d{4})\s*To\s*(\d{2}/\d{2}/\d{4})", re.IGNORECASE)
 
-_HEADER_ANCHOR_RE = re.compile(
-    r"Previous Balance.*?Payment\s*&\s*Other Credits", re.IGNORECASE | re.DOTALL
-)
 _GENERIC_AMOUNT_RE = re.compile(r"([\d,]+\.\d{2})\s*(DR|CR)?")
+
+# The header VALUES do not follow directly after the header LABELS — there's
+# a large block of unrelated labels in between (payment-slip fields, Credit
+# Summary labels, transaction-table column headers, marketing messages,
+# Rewards Summary labels). "Closing Balance(Points)" is the last of those
+# labels, immediately followed by the card product name and then the actual
+# values — a much tighter, more reliable anchor than trying to span the
+# whole gap from "Previous Balance".
+_VALUES_ANCHOR_RE = re.compile(r"Closing Balance\(Points\)", re.IGNORECASE)
 
 # Tear-off payment slip fragment: "<row>\n<date>\n<amount>\n<masked card no>".
 _SLIP_RE = re.compile(
@@ -87,10 +93,10 @@ def _classify(description: str) -> str:
 
 
 def _extract_header_block(text: str) -> dict[str, Decimal] | None:
-    anchor = _HEADER_ANCHOR_RE.search(text)
+    anchor = _VALUES_ANCHOR_RE.search(text)
     if not anchor:
         return None
-    tail = text[anchor.end() : anchor.end() + 200]
+    tail = text[anchor.end() : anchor.end() + 300]
     matches = _GENERIC_AMOUNT_RE.findall(tail)
     if len(matches) < 4:
         return None

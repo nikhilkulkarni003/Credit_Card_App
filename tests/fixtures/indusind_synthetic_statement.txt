@@ -1,27 +1,53 @@
-INDUSIND BANK CREDIT CARD LEGEND MASTERCARD
 Previous Balance
 Purchases & Other Charges
 Cash Advance
 Payment & Other Credits
 Statement Period
 Statement Date
-5,000.00 DR
-0.00
-618.00
-1,000.00
-16/05/2026 To 15/06/2026
-05/08/2026
-
+Total Outstanding
+(including Loans)
+Total Amount Due
+Minimum Amount Due
+Payment Due Date
+Payment Due Date
+Min.Amount Due
+Cheque No
+Date
+Bank
+Amount
+.Please draw your cheque favouring IndusInd Bank Credit Card No.
 Credit
 Summary
 Credit Limit
 Available Credit Limit
 Cash Limit
 Available Cash Limit
-2,58,000.00
-2,14,353.45
-51,600.00
-51,600.00
+IMPORTANT MESSAGES:
+PROMOTIONAL MESSAGES:
+ACCOUNT SUMMARY
+Date
+Transaction Details
+Merchant Category
+Reward
+Points
+Amount (in
+)
+MARKETING MESSAGE 1:
+MARKETING MESSAGE 2:
+NOTE: filler note text goes here to mimic the real gap between labels and values.
+Rewards
+Summary
+Opening Balance(Points)
+Points Earned
+Points Redeemed*
+Closing Balance(Points)
+INDUSIND BANK CREDIT CARD TEST MASTERCARD
+5,000.00 DR
+0.00
+618.00
+1,000.00
+16/05/2026 To 15/06/2026
+05/08/2026
 
 Payment Details for MR TEST USER (Credit Card No. 4321XXXXXXXX1234)
 20/05/2026
